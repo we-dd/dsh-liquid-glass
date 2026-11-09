@@ -1058,3 +1058,11 @@ html.lg-on #root {
   border-radius: var(--lg-window-radius);
   corner-shape: superellipse(1.7);
 }
+
+/* The window is transparent (shell patch), but `color-scheme: dark` on :root makes
+   the UA paint its canvas base colour (#121212) — that is the grey that shows
+   through the rounded corners. Keep the canvas unpainted at the root and give
+   the content its own scheme so scrollbars and native controls stay correct. */
+html.lg-on { color-scheme: normal !important; }
+html.lg-on body { color-scheme: light !important; }
+html.lg-on body[data-ds-dark-theme] { color-scheme: dark !important; }
