@@ -50,6 +50,10 @@ function walk(node, prefix, out) {
   }
 }
 
+function isWindowsFrameAnchor(text) {
+  return text.includes("...isWindows ? {\n      titleBarStyle: \"hidden\",") && !text.includes('frame: false');
+}
+
 function patchMain(text) {
   let next = text;
   const overlay = 'titleBarOverlay: windowsTitleBarOverlay(nativeTheme.shouldUseDarkColors),';
@@ -63,11 +67,19 @@ function patchMain(text) {
   /* Transparent window: the app draws its own rounded shell in CSS, so the
      window itself must be see-through or those corners would reveal an opaque
      rectangle instead of the desktop. Windows only — macOS keeps its native
-     shape and vibrancy. */
+     shape and vibrancy.
+     Electron on Windows only composites alpha for *frameless* windows, so the
+     same patch has to drop the frame (`titleBarStyle: hidden` keeps it). */
   if (!next.includes('transparent: true')) {
     const anchor = 'show: false,\n    title: "",';
     if (!next.includes(anchor)) throw new Error('main: window options anchor not found');
     next = next.replace(anchor, 'show: false,\n    ...isWindows ? { transparent: true } : {},\n    title: "",');
+  }
+  if (isWindowsFrameAnchor(next)) {
+    next = next.replace(
+      '...isWindows ? {\n      titleBarStyle: "hidden",',
+      '...isWindows ? {\n      titleBarStyle: "hidden",\n      frame: false,',
+    );
   }
   const solidBg = 'backgroundColor: process.platform === "darwin" ? "#00000000" : nativeTheme.shouldUseDarkColors ? "#141416" : "#f8f8f6",';
   if (next.includes(solidBg)) {
