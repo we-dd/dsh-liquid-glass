@@ -994,3 +994,30 @@ html.lg-on [aria-modal="true"] {
   max-height: 86vh;
   overflow: auto;
 }
+
+/* ============================================================================
+   Window shape: iOS corner radius on the outermost surface.
+   iOS uses large continuous corners (a superellipse, not a plain arc); the whole
+   shell is clipped to one so the app window reads as an iOS surface instead of a
+   rectangle with 16px Windows 11 rounding.
+   ========================================================================== */
+html.lg-on {
+  --lg-window-radius: 34px;
+}
+html.lg-on #lg-wall {
+  border-radius: var(--lg-window-radius);
+  corner-shape: superellipse(1.7);
+  overflow: hidden;
+}
+html.lg-on #root {
+  /* radius only: clipping #root would also clip popovers that reach the window
+     edge — everything that could spill is inset inside the panes already */
+  border-radius: var(--lg-window-radius);
+  corner-shape: superellipse(1.7);
+}
+/* the desktop shell rounds only the content pane's top-left corner (16px, plain
+   arc); drag it along so the app frame and the window agree */
+html.lg-on [data-windows-titlebar] .pI_x6G_frame,
+html.lg-on [class*="frame"] {
+  --dsh-windows-content-radius: var(--lg-window-radius) !important;
+}
