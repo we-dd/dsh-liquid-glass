@@ -1013,3 +1013,21 @@ html.lg-on [class*="newSessionLabelMask"]::first-line {
   background-image: none !important;
   box-shadow: none !important;
 }
+
+
+/* the nested plates the shell stacks inside the new-session button read as
+/* the nested plates the shell stacks inside the new-session button read as
+/* the shell stacks three plates inside the new-session button (label mask,
+   content, label) and each one paints a slightly lighter pill inside the last:
+   that is the concentric-lens look. Flatten them so one capsule remains. */
+html.lg-on [class*="newSession"] [class*="LabelMask"],
+html.lg-on [class*="newSession"] [class*="Content"],
+html.lg-on [class*="newSession"] [class*="Label"] {
+  display: contents !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
