@@ -1043,7 +1043,7 @@ html.lg-on [class*="newSession"] [class*="Label"] {
    the real window chrome instead of a stray polygon.
    ========================================================================== */
 html.lg-on {
-  --lg-window-radius: 34px;
+  --lg-window-radius: 30px; /* matches the pane radius (30px) */
   --dsh-windows-content-radius: var(--lg-window-radius) !important;
   /* the window is transparent (shell patch): keep this clear so the rounded
      corners reveal the desktop instead of a coloured rectangle */
