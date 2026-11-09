@@ -153,6 +153,87 @@ window.__ModuleLoader__.load({
       doc.body.appendChild(host);
       return () => host.remove();
     }
+    /**
+     * Liquid refraction for the composer only.
+     *
+     * The SVG filter warps whatever sits *behind* the composer card — the chat
+     * scroller passes under it, so a displacement map gives a real, live lens
+     * instead of a fake overlay. The displacement is driven by scroll velocity
+     * and decays to zero, so a still UI stays perfectly crisp.
+     */
+    function installComposerLens() {
+      const doc = document;
+      const ns = 'http://www.w3.org/2000/svg';
+      const SVG_ID = 'lg-lens-svg';
+      const FILTER_ID = 'lg-lens';
+
+      let svg = doc.getElementById(SVG_ID);
+      if (svg === null) {
+        svg = doc.createElementNS(ns, 'svg');
+        svg.id = SVG_ID;
+        svg.setAttribute('aria-hidden', 'true');
+        svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+        const filter = doc.createElementNS(ns, 'filter');
+        filter.id = FILTER_ID;
+        filter.setAttribute('x', '0');
+        filter.setAttribute('y', '0');
+        filter.setAttribute('width', '100%');
+        filter.setAttribute('height', '100%');
+        filter.innerHTML =
+          '<feTurbulence type="fractalNoise" baseFrequency="0.006 0.02" numOctaves="1" seed="4" result="noise"/>' +
+          '<feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>';
+        svg.appendChild(filter);
+        doc.body.appendChild(svg);
+      }
+      const displacement = svg.querySelector('feDisplacementMap');
+      if (displacement === null) return () => {};
+
+      // NB: this module has a local `const CSS = __LIQUID_GLASS_CSS__`, so the
+      // DOM API has to be reached through globalThis.
+      if (!globalThis.CSS || !globalThis.CSS.supports('backdrop-filter', `url(#${FILTER_ID})`)) return () => {};
+      doc.documentElement.style.setProperty('--lg-composer-lens', `url(#${FILTER_ID})`);
+
+      let target = 0;
+      let current = 0;
+      let frame = 0;
+
+      const step = () => {
+        current += (target - current) * 0.22;
+        if (Math.abs(target - current) < 0.4) current = target;
+        displacement.setAttribute('scale', current.toFixed(2));
+        frame = current === 0 && target === 0 ? 0 : requestAnimationFrame(step);
+      };
+      const kick = (value) => {
+        target = Math.max(0, Math.min(18, value));
+        if (frame === 0) frame = requestAnimationFrame(step);
+      };
+
+      /* velocity of the chat scroller drives the lens */
+      let lastTop = -1;
+      let lastTime = 0;
+      const onScroll = (event) => {
+        const node = event.target;
+        const top = node && typeof node.scrollTop === 'number' ? node.scrollTop : 0;
+        const now = performance.now();
+        if (lastTop < 0) { lastTop = top; lastTime = now; return; }
+        const dt = Math.max(8, now - lastTime);
+        const speed = Math.abs(top - lastTop) / dt;
+        lastTop = top;
+        lastTime = now;
+        kick(speed * 220);
+      };
+      doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
+
+      /* expose a manual trigger so the effect can be inspected without scrolling */
+      window.__lgLens = (value) => { target = value; if (frame === 0) frame = requestAnimationFrame(step); };
+
+      return () => {
+        doc.removeEventListener('scroll', onScroll, { capture: true });
+        doc.documentElement.style.removeProperty('--lg-composer-lens');
+        if (frame !== 0) cancelAnimationFrame(frame);
+        delete window.__lgLens;
+      };
+    }
     function installStyles() {
       const doc = document;
       let style = doc.getElementById(STYLE_ID);
@@ -354,6 +435,7 @@ window.__ModuleLoader__.load({
       // Styles first: the wall and the pointer layer only matter once the
       // material is in place.
       teardown.push(installStyles());
+      teardown.push(installComposerLens());
       teardown.push(installTrafficLights());
       // Dynamic wallpaper is dormant while the shell paints flat white; the
       // installer is kept (installWallpaper) for when the artwork comes back.

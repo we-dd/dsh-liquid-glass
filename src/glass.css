@@ -212,8 +212,8 @@ html.lg-on [class*="dshWbFrame"] { background: transparent !important; }
 html.lg-on [class*="composer"] [class*="card"],
 html.lg-on [class*="uV2eYG"] [class*="card"] {
   background: linear-gradient(168deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.4) 58%, rgba(255,255,255,0.52) 100%) !important;
-  backdrop-filter: blur(42px) saturate(220%) brightness(1.08);
-  -webkit-backdrop-filter: blur(42px) saturate(220%) brightness(1.08);
+  backdrop-filter: var(--lg-composer-lens, none) blur(42px) saturate(220%) brightness(1.04);
+  -webkit-backdrop-filter: var(--lg-composer-lens, none) blur(42px) saturate(220%) brightness(1.04);
   box-shadow:
     0 34px 74px -32px rgba(12, 20, 44, 0.5),
     0 0 0 0.5px rgba(13, 21, 38, 0.14),
@@ -292,9 +292,9 @@ html.lg-on body[data-ds-dark-theme] [class*="uV2eYG_primary"]:disabled {
 }
 html.lg-on body[data-ds-dark-theme] [class*="composer"] [class*="card"],
 html.lg-on body[data-ds-dark-theme] [class*="uV2eYG"] [class*="card"] {
-  background: linear-gradient(168deg, rgba(38, 42, 54, 0.5) 0%, rgba(16, 18, 26, 0.42) 100%) !important;
-  box-shadow:
-    0 34px 78px -34px rgba(0,0,0,0.95),
+  background: linear-gradient(168deg, rgba(26, 29, 38, 0.74) 0%, rgba(14, 16, 23, 0.66) 100%) !important;
+  -webkit-backdrop-filter: var(--lg-composer-lens, none) blur(28px) saturate(130%) brightness(0.94);
+  backdrop-filter: var(--lg-composer-lens, none) blur(28px) saturate(130%) brightness(0.94);
     0 0 0 0.5px rgba(0,0,0,0.65),
     inset 0 1.5px 0 rgba(255,255,255,0.22),
     inset 0 0 0 1px rgba(255,255,255,0.12) !important;
