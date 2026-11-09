@@ -62,7 +62,15 @@ function patchMain(text) {
      from every setTitleBarOverlay call — guard them instead of removing them */
   const call = 'window.setTitleBarOverlay(windowsTitleBarOverlay(isDark));';
   const guarded = 'try{window.setTitleBarOverlay(windowsTitleBarOverlay(isDark));}catch(__lgNoOverlay){}';
-  if (next.includes(call)) next = next.split(call).join(guarded);
+  if (next.includes(call) && !next.includes(guarded)) next = next.split(call).join(guarded);
+
+  /* The shell also repaints the window background on every theme sync
+     (`window.setBackgroundColor(isDark ? "#141416" : "#ffffff")`), which throws
+     the transparency away and makes the rounded corners opaque again. */
+  const solidWindowBg = 'else window.setBackgroundColor(isDark ? "#141416" : "#ffffff");';
+  if (next.includes(solidWindowBg)) {
+    next = next.split(solidWindowBg).join('else window.setBackgroundColor("#00000000");');
+  }
 
   /* Transparent window: the app draws its own rounded shell in CSS, so the
      window itself must be see-through or those corners would reveal an opaque
