@@ -1,0 +1,9 @@
+# build output of tools/build.mjs is committed on purpose — the plugin loads
+# lib/client.js at runtime and a plain `git clone` should be installable as-is.
+node_modules/
+.generations/
+*.log
+*.bak
+*.bak-*
+.DS_Store
+Thumbs.db

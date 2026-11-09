@@ -1,0 +1,954 @@
+/* ============================================================================
+   DSH Liquid Glass — prototype v7
+   ========================================================================== */
+
+html.lg-on {
+  /* ---- dynamic wallpaper palette (overwritten by the client half) ---- */
+  --lg-w-base1: #eef7fd;
+  --lg-w-base2: #cfe6f0;
+  --lg-w-a: rgba(150, 205, 245, 0.9);
+  --lg-w-b: rgba(196, 232, 250, 0.85);
+  --lg-w-c: rgba(126, 214, 214, 0.8);
+  --lg-w-d: rgba(255, 226, 196, 0.75);
+  --lg-w-glow: rgba(255, 255, 255, 0.5);
+  /* solid white shell: the dynamic palette below is kept for reference but the
+     wall now paints flat white in light appearance and a deep night field in
+     dark appearance, so the glass controls are the only material in play. */
+  --lg-wall-paint: linear-gradient(168deg, #f2f5fa 0%, #e9eef7 52%, #e3e9f3 100%);
+  --lg-wall-paint-dynamic:
+    radial-gradient(78% 62% at 12% 4%, var(--lg-w-glow) 0%, rgba(255, 255, 255, 0) 58%),
+    radial-gradient(120% 92% at 14% 10%, var(--lg-w-a) 0%, rgba(255, 255, 255, 0) 58%),
+    radial-gradient(104% 86% at 86% 6%, var(--lg-w-b) 0%, rgba(255, 255, 255, 0) 56%),
+    radial-gradient(118% 96% at 84% 88%, var(--lg-w-c) 0%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(96% 80% at 12% 94%, var(--lg-w-d) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(158deg, var(--lg-w-base1) 0%, var(--lg-w-base2) 100%);
+
+  --lg-blur: 10px;
+  --lg-sat: 200%;
+  --lg-bright: 1.0;
+  --lg-dark-bright: 0.9;
+  --lg-rim: rgba(255, 255, 255, 1);
+  --lg-rim-soft: rgba(255, 255, 255, 0.45);
+  --lg-edge: rgba(255, 255, 255, 0.6);
+  --lg-outline: rgba(13, 21, 38, 0.1);
+  --lg-shadow: 0 30px 70px -44px rgba(10, 18, 40, 0.45), 0 12px 26px -22px rgba(10, 18, 40, 0.22), 0 1px 2px rgba(10, 18, 40, 0.06);
+  --lg-panel-a: rgba(255, 255, 255, 0.07);
+  --lg-panel-b: rgba(252, 254, 255, 0.035);
+  --lg-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+body[data-ds-dark-theme] {
+  --lg-rim: rgba(255, 255, 255, 0.26);
+  --lg-rim-soft: rgba(255, 255, 255, 0.08);
+  --lg-edge: rgba(255, 255, 255, 0.14);
+  --lg-outline: rgba(0, 0, 0, 0.35);
+  --lg-shadow: 0 30px 72px -32px rgba(0, 0, 0, 0.95), 0 12px 28px -18px rgba(0, 0, 0, 0.75);
+  --lg-panel-a: rgba(32, 36, 46, 0.5);
+  --lg-panel-b: rgba(20, 23, 32, 0.4);
+  }
+
+/* ---------------------------------------------------------------- wallpaper */
+#lg-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--lg-wall-paint);
+}
+#lg-wall .lg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(125% 95% at 50% 38%, rgba(0,0,0,0) 48%, rgba(8, 12, 24, 0.14) 100%);
+}
+body[data-ds-dark-theme] #lg-wall .lg-vignette {
+  background: radial-gradient(125% 95% at 50% 34%, rgba(0, 0, 0, 0.2) 18%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+/* ------------------------------------------------------------ transparency */
+html.lg-on body { background: transparent !important; }
+html.lg-on #root { position: relative; z-index: 1; }
+
+html.lg-on #root *:has(> [class*="sidebarCol"]):has(> [class*="centerCol"]) {
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+html.lg-on [class*="sidebarCol"],
+html.lg-on [class*="centerCol"] {
+  position: relative;
+  border-radius: 30px;
+  background-image:
+    radial-gradient(92% 74% at 50% 46%, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.015) 56%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 26%, rgba(10, 18, 40, 0.035) 100%),
+    linear-gradient(158deg, var(--lg-panel-a) 0%, var(--lg-panel-b) 54%, var(--lg-panel-a) 100%) !important;
+  background-blend-mode: normal, normal, normal;
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  box-shadow:
+    0 0 0 1px var(--lg-outline),
+    var(--lg-shadow),
+    inset 0 1.5px 0 var(--lg-rim),
+    inset 0 3px 5px -3px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px var(--lg-edge),
+    inset 0 -1.5px 0 var(--lg-rim-soft),
+    inset 0 -26px 34px -32px rgba(10, 18, 40, 0.22);
+  overflow: hidden;
+}
+
+/* Dark material: the same stack, but the "light falling on glass" layers have to
+   be an order of magnitude weaker — a 20% white radial on a dark pane is exactly
+   what makes dark mode read as washed-out grey. */
+html.lg-on body[data-ds-dark-theme] [class*="sidebarCol"],
+html.lg-on body[data-ds-dark-theme] [class*="centerCol"] {
+  background-image:
+    radial-gradient(92% 74% at 50% 46%, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.01) 56%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 22%, rgba(0, 0, 0, 0.3) 100%),
+    linear-gradient(158deg, var(--lg-panel-a) 0%, var(--lg-panel-b) 54%, var(--lg-panel-a) 100%) !important;
+  background-blend-mode: normal, normal, normal;
+  backdrop-filter: blur(var(--lg-blur)) saturate(150%) brightness(var(--lg-dark-bright, 0.88));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(150%) brightness(var(--lg-dark-bright, 0.88));
+  /* the light stack's 85% white inner highlight is a lamp on a dark pane */
+  box-shadow:
+    0 0 0 1px var(--lg-outline),
+    var(--lg-shadow),
+    inset 0 1.5px 0 var(--lg-rim),
+    inset 0 0 0 1px var(--lg-edge),
+    inset 0 -1.5px 0 var(--lg-rim-soft);
+}
+
+/* refraction ring — content pane first; the navigation column gets a thinner,
+   fainter band in the sidebar block below (a 26px band on a 270px column reads
+   as a colour fringe, not as an edge). */
+html.lg-on [class*="centerCol"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: var(--lg-wall-paint);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.12);
+  transform-origin: center;
+  filter: saturate(155%) brightness(1.03);
+  padding: 26px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.85;
+}
+html.lg-on body[data-ds-dark-theme] [class*="centerCol"]::before { opacity: 0.4; }
+
+/* specular sweep */
+html.lg-on [class*="sidebarCol"]::after,
+html.lg-on [class*="centerCol"]::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255,255,255,0) 44%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 56%);
+  transform: translateX(-40%);
+  animation: lg-sweep 19s var(--lg-ease) infinite;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+html.lg-on body[data-ds-dark-theme] [class*="sidebarCol"]::after,
+html.lg-on body[data-ds-dark-theme] [class*="centerCol"]::after { opacity: 0 !important; }
+@keyframes lg-sweep {
+  0%, 60% { transform: translateX(-40%); opacity: 0; }
+  70% { opacity: 0.45; }
+  100% { transform: translateX(40%); opacity: 0; }
+}
+
+html.lg-on [class*="sidebarCol"] {
+  margin: 12px 0 12px 12px;
+  /* same material as the content pane: the wallpaper is banded top-to-bottom,
+     so a given height renders the same tint in every column. */
+}
+/* a faint, narrow edge band instead of the content pane's wide one */
+html.lg-on [class*="sidebarCol"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: var(--lg-wall-paint);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.05);
+  transform-origin: center;
+  filter: saturate(130%) brightness(1.02);
+  padding: 10px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.18;
+}
+html.lg-on body[data-ds-dark-theme] [class*="sidebarCol"]::before { opacity: 0.12; }
+
+html.lg-on [class*="centerCol"] { margin: 12px; }
+html.lg-on [class*="bottomRow"] { background: transparent !important; }
+
+/* sidebar interior fills */
+html.lg-on [class*="sidebarCol"] [class*="root"],
+html.lg-on [class*="sidebarCol"] [class*="quietBars"] { background: transparent !important; }
+
+
+
+/* conversation shell */
+html.lg-on [class*="wSkVaW_root"],
+html.lg-on [class*="dshWbBody"],
+html.lg-on [class*="dshWbFrame"] { background: transparent !important; }
+
+/* composer card */
+html.lg-on [class*="composer"] [class*="card"],
+html.lg-on [class*="uV2eYG"] [class*="card"] {
+  background: linear-gradient(168deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.4) 58%, rgba(255,255,255,0.52) 100%) !important;
+  backdrop-filter: blur(42px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter: blur(42px) saturate(220%) brightness(1.08);
+  box-shadow:
+    0 34px 74px -32px rgba(12, 20, 44, 0.5),
+    0 0 0 0.5px rgba(13, 21, 38, 0.14),
+    inset 0 1.5px 0 rgba(255,255,255,1),
+    inset 0 0 0 1px rgba(255,255,255,0.7),
+    inset 0 -26px 38px -34px rgba(12,20,44,0.3) !important;
+  border: 0 !important;
+  transition: transform 0.5s var(--lg-ease), box-shadow 0.5s var(--lg-ease);
+}
+html.lg-on [class*="composer"] [class*="card"]:focus-within,
+html.lg-on [class*="uV2eYG"] [class*="card"]:focus-within { transform: translateY(-1px); }
+
+/* ----------------------------------------------------------------------------
+   Apple-format input: focus, caret, selection, send states.
+
+   The HIG field is not defined by its corner radius, it is defined by a state
+   machine everyone can read:
+     · keyboard focus is ALWAYS visible — the accent ring (macOS: 2–3pt solid
+       accent, tight to the control). A glass composer also lifts one brightness
+       step so the focused surface reads as "live".
+     · the caret and the text selection use the accent colour, never the label
+       colour.
+     · a send/confirm control is neutral while there is nothing to send and
+       takes the accent only when the field carries content (Messages model),
+       instead of a permanently tinted button at reduced opacity.
+   -------------------------------------------------------------------------- */
+html.lg-on [class*="composer"] [class*="card"]:focus-within,
+html.lg-on [class*="uV2eYG"] [class*="card"]:focus-within {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, #4176e6 52%, transparent),
+    0 0 0 5px color-mix(in srgb, #4176e6 12%, transparent),
+    0 34px 74px -32px rgba(12, 20, 44, 0.5),
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="composer"] [class*="card"]:focus-within,
+html.lg-on body[data-ds-dark-theme] [class*="uV2eYG"] [class*="card"]:focus-within {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, #6f9bff 66%, transparent),
+    0 0 0 4px color-mix(in srgb, #6f9bff 18%, transparent),
+    0 34px 78px -34px rgba(0, 0, 0, 0.95),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+}
+
+/* caret + selection follow the accent, as every AppKit/UIKit field does */
+html.lg-on [class*="uV2eYG_input"],
+html.lg-on [contenteditable="true"] {
+  caret-color: #4176e6;
+}
+html.lg-on body[data-ds-dark-theme] [class*="uV2eYG_input"],
+html.lg-on body[data-ds-dark-theme] [contenteditable="true"] {
+  caret-color: #6f9bff;
+}
+html.lg-on [class*="uV2eYG_input"]::selection,
+html.lg-on [contenteditable="true"]::selection {
+  background: color-mix(in srgb, #4176e6 26%, transparent);
+}
+
+/* send: neutral until there is something to send, accent when there is */
+html.lg-on [class*="uV2eYG_primary"]:disabled {
+  background: rgba(13, 21, 38, 0.1) !important;
+  color: var(--dsw-static-neutral-bluish-600, #81858c) !important;
+  opacity: 1 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45) !important;
+}
+html.lg-on [class*="uV2eYG_primary"]:not(:disabled) {
+  box-shadow:
+    0 10px 22px -12px rgba(65, 118, 230, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="uV2eYG_primary"]:disabled {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="composer"] [class*="card"],
+html.lg-on body[data-ds-dark-theme] [class*="uV2eYG"] [class*="card"] {
+  background: linear-gradient(168deg, rgba(38, 42, 54, 0.5) 0%, rgba(16, 18, 26, 0.42) 100%) !important;
+  box-shadow:
+    0 34px 78px -34px rgba(0,0,0,0.95),
+    0 0 0 0.5px rgba(0,0,0,0.65),
+    inset 0 1.5px 0 rgba(255,255,255,0.22),
+    inset 0 0 0 1px rgba(255,255,255,0.12) !important;
+}
+
+html.lg-on [class*="bubble"] { backdrop-filter: blur(14px) saturate(150%); }
+
+html.lg-on [class*="selected"] {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 10px -8px rgba(16,24,48,0.5);
+}
+
+/* ============================================================================
+   Token layer: make every token-driven surface translucent glass.
+   ========================================================================== */
+html.lg-on body {
+  --dsw-alias-bg-base: rgba(255, 255, 255, 0.55) !important;
+  --dsw-alias-bg-layer-1: rgba(255, 255, 255, 0.66) !important;
+  --dsw-alias-bg-layer-2: rgba(255, 255, 255, 0.52) !important;
+  --dsw-alias-bg-layer-3: rgba(255, 255, 255, 0.44) !important;
+  --dsw-alias-bg-overlay: rgba(240, 244, 251, 0.72) !important;
+  --dsw-alias-bg-module-platform: rgba(245, 247, 250, 0.5) !important;
+  --dsw-alias-bg-multi-select: rgba(245, 247, 250, 0.5) !important;
+  --dsw-specific-sidebar-fill: rgba(255, 255, 255, 0.06) !important;
+  --dsw-specific-input-major: rgba(255, 255, 255, 0.62) !important;
+  --dsw-specific-menu: rgba(255, 255, 255, 0.66) !important;
+  --dsw-specific-selector: rgba(255, 255, 255, 0.5) !important;
+  --dsw-specific-bubble: rgba(233, 242, 255, 0.72) !important;
+  --dsw-specific-tip: rgba(255, 255, 255, 0.6) !important;
+  --dsw-menu-surface-fill: rgba(250, 252, 255, 0.7) !important;
+  --dsw-menu-backdrop-filter: blur(44px) saturate(185%) brightness(1.04) !important;
+  --dsw-alias-markdown-code-block: rgba(255, 255, 255, 0.52) !important;
+  --dsw-alias-markdown-code-block-banner: rgba(255, 255, 255, 0.44) !important;
+  --dsw-alias-markdown-inline-code: rgba(255, 255, 255, 0.6) !important;
+  --dsw-alias-markdown-tag: rgba(255, 255, 255, 0.5) !important;
+  --dsw-alias-markdown-placeholder: rgba(245, 247, 250, 0.55) !important;
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.42) !important;
+  --dsw-alias-interactive-bg-hover-solid: rgba(255, 255, 255, 0.55) !important;
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.6) !important;
+  --dsw-alias-settings-card-fill: rgba(255, 255, 255, 0.56) !important;
+  --dsw-alias-menu-group-header-fill: rgba(248, 250, 252, 0.6) !important;
+  --dsw-alias-turn-trigger-bg: rgba(255, 255, 255, 0.4) !important;
+  --dsw-alias-button-elevated-fill: rgba(255, 255, 255, 0.72) !important;
+  --dsw-alias-button-floating-fill: rgba(255, 255, 255, 0.78) !important;
+  --dsw-alias-button-floating-hover: rgba(255, 255, 255, 0.92) !important;
+}
+html.lg-on body[data-ds-dark-theme] {
+  --dsw-alias-bg-base: rgba(20, 23, 33, 0.62) !important;
+  --dsw-alias-bg-layer-1: rgba(28, 31, 42, 0.72) !important;
+  --dsw-alias-bg-layer-2: rgba(38, 41, 54, 0.6) !important;
+  --dsw-alias-bg-layer-3: rgba(46, 49, 62, 0.5) !important;
+  --dsw-alias-bg-overlay: rgba(22, 25, 35, 0.78) !important;
+  --dsw-alias-bg-module-platform: rgba(30, 33, 44, 0.6) !important;
+  --dsw-alias-bg-multi-select: rgba(30, 33, 44, 0.6) !important;
+  --dsw-specific-sidebar-fill: rgba(24, 27, 37, 0.4) !important;
+  --dsw-specific-input-major: rgba(38, 41, 54, 0.66) !important;
+  --dsw-specific-menu: rgba(30, 33, 44, 0.72) !important;
+  --dsw-specific-selector: rgba(38, 41, 54, 0.6) !important;
+  --dsw-specific-bubble: rgba(40, 52, 82, 0.66) !important;
+  --dsw-specific-tip: rgba(30, 33, 44, 0.66) !important;
+  --dsw-menu-surface-fill: rgba(30, 33, 44, 0.72) !important;
+  --dsw-menu-backdrop-filter: blur(44px) saturate(170%) brightness(0.96) !important;
+  --dsw-alias-markdown-code-block: rgba(30, 33, 44, 0.62) !important;
+  --dsw-alias-markdown-code-block-banner: rgba(38, 41, 54, 0.6) !important;
+  --dsw-alias-markdown-inline-code: rgba(46, 49, 62, 0.6) !important;
+  --dsw-alias-markdown-tag: rgba(46, 49, 62, 0.55) !important;
+  --dsw-alias-markdown-placeholder: rgba(38, 41, 54, 0.6) !important;
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.08) !important;
+  --dsw-alias-interactive-bg-hover-solid: rgba(255, 255, 255, 0.12) !important;
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.16) !important;
+  --dsw-alias-settings-card-fill: rgba(30, 33, 44, 0.6) !important;
+  --dsw-alias-menu-group-header-fill: rgba(38, 41, 54, 0.6) !important;
+  --dsw-alias-turn-trigger-bg: rgba(255, 255, 255, 0.05) !important;
+  --dsw-alias-button-elevated-fill: rgba(46, 49, 62, 0.8) !important;
+  --dsw-alias-button-floating-fill: rgba(46, 49, 62, 0.85) !important;
+  --dsw-alias-button-floating-hover: rgba(58, 62, 78, 0.95) !important;
+}
+
+/* liquid press spring (no cursor-tracking highlight: the glass keeps a fixed
+   specular edge instead of a light that follows the pointer) */
+html.lg-on [data-lg-press] {
+  transform: scale(0.97) !important;
+  transition: transform 0.12s cubic-bezier(0.3, 0, 0.2, 1) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   Sidebar toggle, mirrored to the right edge of the window.
+
+   The shell renders its collapse control inside the sidebar header; once the
+   sidebar is narrow that button sits in the app's top-left corner, which is the
+   least discoverable place for "hide this column". The original button stays in
+   the DOM (hidden) and owns the state — the floating control below only
+   forwards the click, so nothing in React's tree is relocated.
+   -------------------------------------------------------------------------- */
+/* only the shell's own button is hidden — by a class the client half adds, so
+   the mirror (same aria-label) is never caught by this rule */
+html.lg-on .lg-toggle-origin {
+  display: none !important;
+}
+
+html.lg-on .lg-sidebar-toggle {
+  position: fixed;
+  /* on the brand line, inside the sidebar, flush to its inner right edge */
+  top: var(--lg-sidebar-toggle-top, 31px);
+  left: max(8px, calc(var(--lg-sidebar-edge, 285px) - 42px));
+  right: auto;
+  z-index: 60;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary, #61666b);
+  /* No tile: the button sits on the pane like the shell's own icon buttons and
+     only materialises on hover — an always-on plate reads as a foreign object
+     once the panes are this transparent. */
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  cursor: pointer;
+  transition: background 0.16s var(--lg-ease), color 0.16s var(--lg-ease), transform 0.15s var(--lg-ease);
+}
+html.lg-on .lg-sidebar-toggle:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+  background: rgba(15, 23, 42, 0.06);
+}
+html.lg-on .lg-sidebar-toggle[hidden] { display: none !important; }
+html.lg-on .lg-sidebar-toggle:active { transform: scale(0.94); }
+html.lg-on .lg-sidebar-toggle:focus-visible {
+  outline: 2px solid #4176e6;
+  outline-offset: 2px;
+}
+html.lg-on .lg-sidebar-toggle .lg-sidebar-toggle-icon { display: grid; place-items: center; }
+html.lg-on .lg-sidebar-toggle svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.24s var(--lg-ease);
+}
+html.lg-on .lg-sidebar-toggle[data-collapsed='true'] svg { transform: scaleX(-1); }
+html.lg-on body[data-ds-dark-theme] .lg-sidebar-toggle {
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+}
+html.lg-on body[data-ds-dark-theme] .lg-sidebar-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+
+/* ----------------------------------------------------------------------------
+   Reach-through toggles for the shell pieces that do not read a token:
+   the sidebar keeps an inline width from its resize state, and the right dock
+   renders an opaque tab host even while closed.
+   -------------------------------------------------------------------------- */
+html.lg-on [class*="sidebarCol"] > div > [style*="width"] { width: 100% !important; }
+html.lg-on [class*="rightbarCol"],
+html.lg-on [class*="emptyTabHost"] { background: transparent !important; }
+
+/* The design system's material layer (menus, popovers, dialog backings). It
+   already reads --dsw-menu-surface-fill/--dsw-menu-backdrop-filter, so the
+   token layer made it translucent; this adds the glass edge. */
+html.lg-on [class*="_material_"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 0 0.5px rgba(13, 21, 38, 0.14);
+  background-image: linear-gradient(152deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 58%);
+}
+html.lg-on body[data-ds-dark-theme] [class*="_material_"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 0 0.5px rgba(0, 0, 0, 0.6);
+  background-image: linear-gradient(152deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 58%);
+}
+
+/* ----------------------------------------------------------------------------
+   Modal surfaces cover live content, so they get an opaque-ish frosted body
+   instead of the shell's see-through glass: still a material, never a window
+   you can read the chat through.
+   -------------------------------------------------------------------------- */
+html.lg-on [role="dialog"][aria-modal="true"],
+html.lg-on [data-shortcut-modal] {
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(168deg, rgba(255, 255, 255, 0.88), rgba(248, 251, 255, 0.8)) !important;
+  backdrop-filter: blur(46px) saturate(185%) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(46px) saturate(185%) brightness(1.03) !important;
+  box-shadow:
+    0 44px 110px -44px rgba(10, 18, 40, 0.55),
+    0 6px 20px -14px rgba(10, 18, 40, 0.35),
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+  border: 0 !important;
+}
+html.lg-on body[data-ds-dark-theme] [role="dialog"][aria-modal="true"],
+html.lg-on body[data-ds-dark-theme] [data-shortcut-modal] {
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(168deg, rgba(34, 37, 50, 0.94), rgba(20, 23, 32, 0.9)) !important;
+  box-shadow:
+    0 44px 110px -44px rgba(0, 0, 0, 0.95),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+/* ===== BRAND: OFFICIAL DEEPSEEK MARK ===== */
+/* The stock sidebar mark is the Desktop app's own whale; the hero mark is the
+   official DeepSeek whale. Both are replaced / tinted with the official mark in
+   the official brand blue (#4D6BFE), so the product reads as DeepSeek's. */
+html.lg-on {
+  --lg-brand: #4d6bfe;
+  --lg-whale: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23.16 17.04'><path d='M22.9168 1.43018C22.6713 1.31018 22.5658 1.53918 22.4223 1.65519C22.3733 1.69269 22.3318 1.74169 22.2903 1.78669C21.9317 2.1697 21.5127 2.42121 20.9657 2.39121C20.1657 2.34621 19.4827 2.59771 18.8787 3.20973C18.7502 2.45521 18.3236 2.0047 17.6746 1.71569C17.3351 1.56568 16.9916 1.41518 16.7536 1.08867C16.5876 0.856163 16.5421 0.597155 16.4591 0.341647C16.4061 0.187643 16.3536 0.0301382 16.1761 0.00363739C15.9836 -0.0263635 15.9081 0.135141 15.8326 0.270145C15.5306 0.822162 15.4136 1.43018 15.4251 2.0462C15.4516 3.43174 16.0366 4.53527 17.1991 5.3203C17.3311 5.4103 17.3651 5.5003 17.3236 5.63181C17.2441 5.90231 17.1501 6.16482 17.0671 6.43533C17.0141 6.60784 16.9351 6.64584 16.7501 6.57033C16.1121 6.30383 15.5611 5.90931 15.074 5.4328C14.2475 4.63328 13.5 3.75075 12.568 3.05973C12.349 2.89822 12.13 2.74822 11.9034 2.60522C10.9524 1.68169 12.028 0.923165 12.277 0.833162C12.5375 0.739159 12.3675 0.41615 11.5259 0.42015C10.6844 0.42365 9.91439 0.705658 8.93286 1.08117C8.78935 1.13767 8.63835 1.17867 8.48384 1.21267C7.59332 1.04367 6.66829 1.00617 5.70226 1.11517C3.88321 1.31768 2.43016 2.1777 1.36213 3.64575C0.0790928 5.4103 -0.222916 7.41536 0.146595 9.50642C0.535106 11.7105 1.66014 13.535 3.38869 14.9616C5.18125 16.4406 7.24581 17.1657 9.60138 17.0266C11.0319 16.9441 12.6245 16.7526 14.421 15.2321C14.874 15.4576 15.3496 15.5476 16.1381 15.6151C16.7456 15.6716 17.3306 15.5851 17.7836 15.4911C18.4931 15.3411 18.4441 14.6841 18.1876 14.5636C16.1081 13.595 16.5646 13.9891 16.1496 13.67C17.2061 12.42 18.8202 10.1979 19.3182 7.17235C19.3672 6.83834 19.4297 6.36783 19.4222 6.09732C19.4182 5.93231 19.4562 5.86831 19.6447 5.84931C20.1657 5.78931 20.6712 5.64681 21.1357 5.3913C22.4833 4.65528 23.0268 3.44624 23.1548 1.9972C23.1738 1.77569 23.1508 1.54668 22.9168 1.43018ZM11.1749 14.4736C9.15936 12.889 8.18184 12.3675 7.77832 12.39C7.40081 12.4125 7.46881 12.8445 7.55182 13.126C7.63882 13.404 7.75182 13.5955 7.91033 13.8396C8.01983 14.0011 8.09533 14.2411 7.80083 14.4216C7.15181 14.8231 6.02327 14.2866 5.97027 14.2601C4.65673 13.4865 3.5587 12.4655 2.78467 11.069C2.03715 9.72493 1.60314 8.28289 1.53164 6.74384C1.51264 6.37233 1.62214 6.24082 1.99215 6.17332C2.47916 6.08332 2.98118 6.06432 3.46769 6.13582C5.52476 6.43633 7.27581 7.35586 8.74385 8.8129C9.58188 9.64243 10.2159 10.634 10.8689 11.6025C11.5634 12.631 12.3105 13.611 13.262 14.4146C13.598 14.6961 13.866 14.9101 14.1225 15.0681C13.349 15.1546 12.058 15.1731 11.1749 14.4746L11.1749 14.4736ZM12.141 8.25988C12.141 8.09488 12.273 7.96338 12.439 7.96338C12.4765 7.96338 12.5105 7.97088 12.541 7.98188C12.5825 7.99688 12.6205 8.01938 12.6505 8.05338C12.7035 8.10588 12.7335 8.18088 12.7335 8.25988C12.7335 8.42489 12.6015 8.55639 12.4355 8.55639C12.2695 8.55639 12.141 8.42489 12.141 8.25988ZM15.1415 9.79893C14.949 9.87793 14.7565 9.94544 14.5715 9.95294C14.2845 9.96794 13.9715 9.85143 13.8015 9.70893C13.5375 9.48742 13.3485 9.36342 13.2695 8.97691C13.2355 8.8119 13.2545 8.55639 13.2845 8.40989C13.3525 8.09438 13.277 7.89187 13.0545 7.70787C12.8735 7.55786 12.643 7.51636 12.39 7.51636C12.2955 7.51636 12.209 7.47486 12.1445 7.44136C12.039 7.38886 11.9519 7.25735 12.035 7.09585C12.0615 7.04335 12.19 6.91584 12.22 6.89334C12.5635 6.69784 12.9595 6.76184 13.326 6.90834C13.6655 7.04735 13.9225 7.30236 14.292 7.66287C14.6695 8.09838 14.7375 8.21838 14.9525 8.54539C15.1225 8.8009 15.277 9.06341 15.3831 9.36392C15.4471 9.55142 15.3641 9.70493 15.1415 9.79893Z' fill='%23000'/></svg>");
+  --lg-whale-brand: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23.16 17.04'><path d='M22.9168 1.43018C22.6713 1.31018 22.5658 1.53918 22.4223 1.65519C22.3733 1.69269 22.3318 1.74169 22.2903 1.78669C21.9317 2.1697 21.5127 2.42121 20.9657 2.39121C20.1657 2.34621 19.4827 2.59771 18.8787 3.20973C18.7502 2.45521 18.3236 2.0047 17.6746 1.71569C17.3351 1.56568 16.9916 1.41518 16.7536 1.08867C16.5876 0.856163 16.5421 0.597155 16.4591 0.341647C16.4061 0.187643 16.3536 0.0301382 16.1761 0.00363739C15.9836 -0.0263635 15.9081 0.135141 15.8326 0.270145C15.5306 0.822162 15.4136 1.43018 15.4251 2.0462C15.4516 3.43174 16.0366 4.53527 17.1991 5.3203C17.3311 5.4103 17.3651 5.5003 17.3236 5.63181C17.2441 5.90231 17.1501 6.16482 17.0671 6.43533C17.0141 6.60784 16.9351 6.64584 16.7501 6.57033C16.1121 6.30383 15.5611 5.90931 15.074 5.4328C14.2475 4.63328 13.5 3.75075 12.568 3.05973C12.349 2.89822 12.13 2.74822 11.9034 2.60522C10.9524 1.68169 12.028 0.923165 12.277 0.833162C12.5375 0.739159 12.3675 0.41615 11.5259 0.42015C10.6844 0.42365 9.91439 0.705658 8.93286 1.08117C8.78935 1.13767 8.63835 1.17867 8.48384 1.21267C7.59332 1.04367 6.66829 1.00617 5.70226 1.11517C3.88321 1.31768 2.43016 2.1777 1.36213 3.64575C0.0790928 5.4103 -0.222916 7.41536 0.146595 9.50642C0.535106 11.7105 1.66014 13.535 3.38869 14.9616C5.18125 16.4406 7.24581 17.1657 9.60138 17.0266C11.0319 16.9441 12.6245 16.7526 14.421 15.2321C14.874 15.4576 15.3496 15.5476 16.1381 15.6151C16.7456 15.6716 17.3306 15.5851 17.7836 15.4911C18.4931 15.3411 18.4441 14.6841 18.1876 14.5636C16.1081 13.595 16.5646 13.9891 16.1496 13.67C17.2061 12.42 18.8202 10.1979 19.3182 7.17235C19.3672 6.83834 19.4297 6.36783 19.4222 6.09732C19.4182 5.93231 19.4562 5.86831 19.6447 5.84931C20.1657 5.78931 20.6712 5.64681 21.1357 5.3913C22.4833 4.65528 23.0268 3.44624 23.1548 1.9972C23.1738 1.77569 23.1508 1.54668 22.9168 1.43018ZM11.1749 14.4736C9.15936 12.889 8.18184 12.3675 7.77832 12.39C7.40081 12.4125 7.46881 12.8445 7.55182 13.126C7.63882 13.404 7.75182 13.5955 7.91033 13.8396C8.01983 14.0011 8.09533 14.2411 7.80083 14.4216C7.15181 14.8231 6.02327 14.2866 5.97027 14.2601C4.65673 13.4865 3.5587 12.4655 2.78467 11.069C2.03715 9.72493 1.60314 8.28289 1.53164 6.74384C1.51264 6.37233 1.62214 6.24082 1.99215 6.17332C2.47916 6.08332 2.98118 6.06432 3.46769 6.13582C5.52476 6.43633 7.27581 7.35586 8.74385 8.8129C9.58188 9.64243 10.2159 10.634 10.8689 11.6025C11.5634 12.631 12.3105 13.611 13.262 14.4146C13.598 14.6961 13.866 14.9101 14.1225 15.0681C13.349 15.1546 12.058 15.1731 11.1749 14.4746L11.1749 14.4736ZM12.141 8.25988C12.141 8.09488 12.273 7.96338 12.439 7.96338C12.4765 7.96338 12.5105 7.97088 12.541 7.98188C12.5825 7.99688 12.6205 8.01938 12.6505 8.05338C12.7035 8.10588 12.7335 8.18088 12.7335 8.25988C12.7335 8.42489 12.6015 8.55639 12.4355 8.55639C12.2695 8.55639 12.141 8.42489 12.141 8.25988ZM15.1415 9.79893C14.949 9.87793 14.7565 9.94544 14.5715 9.95294C14.2845 9.96794 13.9715 9.85143 13.8015 9.70893C13.5375 9.48742 13.3485 9.36342 13.2695 8.97691C13.2355 8.8119 13.2545 8.55639 13.2845 8.40989C13.3525 8.09438 13.277 7.89187 13.0545 7.70787C12.8735 7.55786 12.643 7.51636 12.39 7.51636C12.2955 7.51636 12.209 7.47486 12.1445 7.44136C12.039 7.38886 11.9519 7.25735 12.035 7.09585C12.0615 7.04335 12.19 6.91584 12.22 6.89334C12.5635 6.69784 12.9595 6.76184 13.326 6.90834C13.6655 7.04735 13.9225 7.30236 14.292 7.66287C14.6695 8.09838 14.7375 8.21838 14.9525 8.54539C15.1225 8.8009 15.277 9.06341 15.3831 9.36392C15.4471 9.55142 15.3641 9.70493 15.1415 9.79893Z' fill='%234d6bfe'/></svg>");
+}
+
+/* sidebar: hide the Desktop bubble-whale, paint the official one (vector mask,
+   so it stays crisp and follows the brand colour instead of currentColor) */
+html.lg-on [data-slot="sidebar.brand.mark"] > svg { display: none !important; }
+html.lg-on [data-slot="sidebar.brand.mark"] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+html.lg-on [data-slot="sidebar.brand.mark"]::before {
+  content: "";
+  width: 27px;
+  height: 19.9px;
+  background-color: var(--lg-brand);
+  -webkit-mask: var(--lg-whale) center / contain no-repeat;
+  mask: var(--lg-whale) center / contain no-repeat;
+  flex: none;
+}
+
+/* hero: the stock mark is already the official whale — give it the brand colour */
+html.lg-on [data-slot="conversation.hero.brand.mark"] svg,
+html.lg-on svg.pXSMma_fish {
+  color: var(--lg-brand) !important;
+}
+
+/* ============================================================================
+   iOS Liquid Glass pass
+   Rules taken from Apple's own guidance (HIG › Materials, "Adopting Liquid Glass"):
+     · Liquid Glass is the *functional* layer — navigation and controls float over
+       content, which keeps scrolling underneath;
+     · shapes are concentric: controls get rounder and nest inside their container;
+     · iOS 26 controls are pills and segmented capsules, not small rounded rects;
+     · the material carries vibrancy, so labels stay at full strength on glass.
+   ========================================================================== */
+
+/* segmented control: the tab strip becomes a floating capsule with a sliding
+   filled pill, instead of text with an underline */
+html.lg-on [role="tablist"] {
+  width: max-content !important;
+  max-width: 100%;
+  gap: 2px !important;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 8px 20px -16px rgba(10, 18, 40, 0.6);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+html.lg-on [role="tablist"] [role="tab"] {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--dsw-alias-label-secondary);
+  transition: background 0.2s var(--lg-ease), color 0.2s var(--lg-ease), box-shadow 0.2s var(--lg-ease);
+}
+html.lg-on [role="tablist"] [role="tab"]::after { display: none !important; }
+html.lg-on [role="tablist"] [role="tab"][aria-selected="true"] {
+  color: var(--dsw-alias-label-primary);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 1px 2px rgba(10, 18, 40, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+html.lg-on body[data-ds-dark-theme] [role="tablist"] {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 20px -16px rgba(0, 0, 0, 0.9);
+}
+html.lg-on body[data-ds-dark-theme] [role="tablist"] [role="tab"][aria-selected="true"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+/* pills: every small control in the functional layer is a capsule */
+html.lg-on [class*="trigger"],
+html.lg-on [class*="pill"] {
+  border-radius: 999px !important;
+}
+html.lg-on [class*="trigger"]:hover,
+html.lg-on [class*="pill"]:hover {
+  background: rgba(255, 255, 255, 0.42);
+}
+html.lg-on body[data-ds-dark-theme] [class*="trigger"]:hover,
+html.lg-on body[data-ds-dark-theme] [class*="pill"]:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* concentric corners: menus belong to the same family as the panels */
+html.lg-on [class*="_material_"] { border-radius: 20px; }
+
+/* the composer is a functional surface too — keep it rounder than content */
+html.lg-on [class*="composer"] [class*="card"],
+html.lg-on [class*="uV2eYG"] [class*="card"] { border-radius: 999px; }
+
+/* scroll edge: content softens as it slides under the functional layer, the way
+   an iOS scroll view fades beneath a bar instead of being cut by a hard edge */
+html.lg-on [class*="scrollBody"] {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22px);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22px);
+}
+
+/* capsule controls need a fill to read as capsules (iOS uses a translucent
+   fill, not just a hit area) */
+html.lg-on button[class*="trigger"] {
+  background: rgba(13, 21, 38, 0.055);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+html.lg-on body[data-ds-dark-theme] button[class*="trigger"] {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================================
+   Clear glass: the panes are back, at the lowest fill that still reads as a
+   surface. The edge — 1.5px specular rim, hairline outline, refraction band —
+   carries the "this is a pane" signal, not the fill.
+   ========================================================================== */
+html.lg-on [class*="centerCol"] [class*="scrollBody"],
+html.lg-on [class*="sidebarCol"] [class*="listArea"] {
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+html.lg-on body[data-ds-dark-theme] [class*="centerCol"] [class*="scrollBody"],
+html.lg-on body[data-ds-dark-theme] [class*="sidebarCol"] [class*="listArea"] {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* dark appearance keeps a dark wall — a white field under light labels would be
+   unreadable — but it is a flat field, not the time-based artwork */
+html.lg-on body[data-ds-dark-theme] {
+  --lg-wall-paint: linear-gradient(168deg, #0d131c 0%, #090e16 52%, #060a11 100%);
+}
+
+/* flat white field: the vignette belongs to the artwork, not to a solid colour */
+html.lg-on #lg-wall .lg-vignette { display: none; }
+
+/* a solid field has nothing to refract or sweep — keep only fill, rim, shadow */
+html.lg-on [class*="sidebarCol"]::before,
+html.lg-on [class*="centerCol"]::before,
+html.lg-on [class*="sidebarCol"]::after,
+html.lg-on [class*="centerCol"]::after { display: none !important; }
+
+/* ============================================================================
+   iOS shell: navigation column + top bar.
+   iOS list language — 10pt row corners, tinted selection, quiet 13pt group
+   headers, capsule segmented controls — and an iOS navigation bar: one hairline
+   under the bar, 17pt semibold title, circular toolbar buttons.
+   ========================================================================== */
+
+/* ---- sidebar: grouped list ---- */
+html.lg-on [class*="sidebarCol"] [class*="panelRow"],
+html.lg-on [class*="sidebarCol"] [class*="bhn1Oq_row"] {
+  border-radius: 10px !important;
+  min-height: 38px;
+  transition: background 0.16s var(--lg-ease), color 0.16s var(--lg-ease);
+}
+html.lg-on [class*="sidebarCol"] [class*="panelRow"]:hover,
+html.lg-on [class*="sidebarCol"] [class*="bhn1Oq_row"]:hover {
+  background: rgba(13, 21, 38, 0.06);
+}
+html.lg-on [class*="sidebarCol"] [class*="panelGlyph"] {
+  color: var(--dsw-alias-label-secondary);
+}
+html.lg-on [class*="sidebarCol"] [class*="sectionHeader"] {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--dsw-alias-label-secondary);
+  padding: 6px 10px 4px;
+}
+html.lg-on [class*="sidebarCol"] [class*="sectionLabel"] {
+  opacity: 0.85;
+}
+
+/* ---- top bar: iOS navigation bar ---- */
+html.lg-on [class*="wSkVaW_header"] {
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(13, 21, 38, 0.055);
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+html.lg-on [class*="wSkVaW_title"] {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* circular toolbar buttons, the iOS 26 toolbar treatment */
+html.lg-on [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]),
+html.lg-on [class*="headerActions"] button {
+  border-radius: 999px !important;
+  height: 30px;
+  min-width: 30px;
+  background: transparent;
+  transition: background 0.16s var(--lg-ease);
+}
+html.lg-on [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):hover,
+html.lg-on [class*="headerActions"] button:hover {
+  background: rgba(13, 21, 38, 0.07);
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]),
+html.lg-on body[data-ds-dark-theme] [class*="headerActions"] button {
+  background: transparent;
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):hover,
+html.lg-on body[data-ds-dark-theme] [class*="headerActions"] button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ---- sidebar: 新会话 = blue capsule, content centred and on one line ---- */
+html.lg-on [class*="newSession"] {
+  height: 44px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: #4d6bfe !important;
+  background-image: none !important;
+  box-shadow:
+    0 10px 22px -14px rgba(77, 107, 254, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  justify-content: center !important;
+  padding: 0 16px !important;
+  transition: background 0.16s var(--lg-ease) !important;
+}
+html.lg-on [class*="newSession"]:hover { background: #5b76ff !important; }
+html.lg-on [class*="newSession"]:active { background: #4460f0 !important; transform: none !important; }
+html.lg-on body[data-ds-dark-theme] [class*="newSession"] {
+  background: #5568ff !important;
+  box-shadow:
+    0 10px 24px -14px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="newSession"]:hover { background: #6475ff !important; }
+
+/* one line, centred: the mask/content wrappers are flex boxes in their own
+   right, so they need the same centring or the glyph drifts left of the label */
+html.lg-on [class*="newSessionLabelMask"],
+html.lg-on [class*="newSessionContent"],
+html.lg-on [class*="newSessionLabel"] {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: transparent !important;
+  background-image: none !important;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+/* the shell's glyph is a plus inside a ring — at 16px that reads as a magnifier.
+   iOS would use a bare plus, so draw one and hide the ringed icon. */
+html.lg-on [class*="newSession"] svg { display: none !important; }
+html.lg-on [class*="newSessionContent"]::before {
+  content: "+";
+  display: inline-block;
+  margin-right: 7px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  color: #fff;
+  transform: translateY(-0.5px);
+  align-self: center;
+}
+/* the shortcut hint stays hidden: the row is plain text */
+html.lg-on [class*="newSessionShortcut"] { display: none !important; }
+
+/* ============================================================================
+   macOS toolbar: the top-right trio and the two top-left controls.
+   macOS 26 toolbar language — borderless 28pt squircles that only show a fill on
+   hover, adjacent items grouped inside one hairline capsule with 1px dividers,
+   icon at secondary label strength.
+   ========================================================================== */
+html.lg-on [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]),
+html.lg-on [class*="OMoRSG_"],
+html.lg-on [class*="brand"] {
+  border-radius: 7px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background 0.12s var(--lg-ease) !important;
+}
+html.lg-on [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):hover,
+html.lg-on [class*="OMoRSG_"]:hover,
+html.lg-on [class*="brand"]:hover {
+  background: rgba(13, 21, 38, 0.06) !important;
+}
+html.lg-on [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):active,
+html.lg-on [class*="OMoRSG_"]:active {
+  background: rgba(13, 21, 38, 0.12) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):hover,
+html.lg-on body[data-ds-dark-theme] [class*="OMoRSG_"]:hover,
+html.lg-on body[data-ds-dark-theme] [class*="brand"]:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] button:not([role="tab"]):not([class*="tab"]):active,
+html.lg-on body[data-ds-dark-theme] [class*="OMoRSG_"]:active {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* the split "open with" control becomes one capsule: squared where the halves
+   meet, rounded on the outside, with a hairline divider between them */
+html.lg-on [class*="OMoRSG_main"] {
+  border-radius: 7px 0 0 7px !important;
+}
+html.lg-on [class*="OMoRSG_chevron"] {
+  border-radius: 0 7px 7px 0 !important;
+  border-left: 1px solid rgba(13, 21, 38, 0.09) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="OMoRSG_main"] { }
+html.lg-on body[data-ds-dark-theme] [class*="OMoRSG_chevron"] {
+  border-left-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* top-left pair: brand button + collapse control share the same geometry */
+html.lg-on .lg-sidebar-toggle { border-radius: 7px !important; }
+
+/* macOS popup buttons: the two chips on the left of the title row ("创造模式",
+   "1 个后台任务运行中") — squircle, hairline outline, 12pt secondary label. */
+html.lg-on [class*="wSkVaW_header"] [class*="trigger"],
+html.lg-on [class*="headerActions"] [class*="trigger"] {
+  border-radius: 6px !important;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px !important;
+  color: var(--dsw-alias-label-secondary) !important;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(13, 21, 38, 0.09) !important;
+}
+html.lg-on [class*="wSkVaW_header"] [class*="trigger"]:hover,
+html.lg-on [class*="headerActions"] [class*="trigger"]:hover {
+  background: rgba(13, 21, 38, 0.05) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] [class*="trigger"],
+html.lg-on body[data-ds-dark-theme] [class*="headerActions"] [class*="trigger"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="wSkVaW_header"] [class*="trigger"]:hover,
+html.lg-on body[data-ds-dark-theme] [class*="headerActions"] [class*="trigger"]:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ============================================================================
+   Question / confirm panels must win over the glass.
+   The ask card shares the page with translucent panes, so it gets its own
+   opaque-ish surface, full-strength labels, and it evicts our floating control.
+   ========================================================================== */
+html.lg-on [class*="nUhMVa_choices"] { position: relative; z-index: 2; }
+html.lg-on [class*="nUhMVa_choice"] {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 0 0 1px rgba(13, 21, 38, 0.1) !important;
+  opacity: 1 !important;
+}
+html.lg-on body[data-ds-dark-theme] [class*="nUhMVa_choice"] {
+  background: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.13) !important;
+}
+html.lg-on [class*="nUhMVa_choiceTitle"],
+html.lg-on [class*="nUhMVa_choiceNote"],
+html.lg-on [class*="nUhMVa_choiceMain"] {
+  opacity: 1 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+/* the floating sidebar toggle must not hover above a modal */
+html.lg-on:has([aria-modal="true"]) .lg-sidebar-toggle,
+html.lg-on:has([role="dialog"]) .lg-sidebar-toggle { display: none !important; }
+/* and no modal surface may be see-through enough to lose its text */
+html.lg-on [role="dialog"][aria-modal="true"] { backdrop-filter: blur(24px) saturate(160%); }
+
+/* ============================================================================
+   macOS traffic lights, top-right, drawn by the plugin.
+   They only exist when the shell patch is installed (window.lgWindow bridge);
+   the native Windows caption buttons are gone in that build, so these are the
+   real controls: red close, yellow minimise, green zoom.
+   ========================================================================== */
+html.lg-on .lg-traffic {
+  position: fixed;
+  top: max(6px, calc((var(--dsh-windows-titlebar-height, 36px) - 12px) / 2));
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 200;
+  -webkit-app-region: no-drag;
+}
+html.lg-on .lg-traffic-dot {
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 12px !important;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50% !important;
+  corner-shape: round !important;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.14);
+  -webkit-app-region: no-drag;
+  transition: filter 0.12s var(--lg-ease);
+}
+html.lg-on .lg-traffic-min { background: #febc2e; }
+html.lg-on .lg-traffic-max { background: #28c840; }
+html.lg-on .lg-traffic-close { background: #ff5f57; }
+html.lg-on .lg-traffic-dot svg {
+  width: 8px;
+  height: 8px;
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 0.12s var(--lg-ease);
+}
+html.lg-on .lg-traffic:hover .lg-traffic-dot svg { opacity: 1; }
+html.lg-on .lg-traffic-dot:active { filter: brightness(0.86); }
+html.lg-on .lg-traffic-dot:focus-visible { outline: 2px solid #4176e6; outline-offset: 2px; }
