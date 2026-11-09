@@ -210,6 +210,8 @@ window.__ModuleLoader__.load({
       const onDown = (event) => {
         const target = event.target instanceof Element ? event.target.closest('button, [role="button"]') : null;
         if (target === null) return;
+        // the new-session control opts out of the press effect entirely
+        if (target.closest('[class*="newSession"]') !== null) return;
         target.setAttribute('data-lg-press', '');
         const release = () => {
           target.removeAttribute('data-lg-press');

@@ -749,15 +749,15 @@ html.lg-on [class*="newSession"] {
   padding: 0 16px !important;
   transition: background 0.16s var(--lg-ease) !important;
 }
-html.lg-on [class*="newSession"]:hover { background: #5b76ff !important; }
-html.lg-on [class*="newSession"]:active { background: #4460f0 !important; transform: none !important; }
+html.lg-on [class*="newSession"]:hover { background: #4d6bfe !important; }
+html.lg-on [class*="newSession"]:active { background: #4d6bfe !important; transform: none !important; }
 html.lg-on body[data-ds-dark-theme] [class*="newSession"] {
   background: #5568ff !important;
   box-shadow:
     0 10px 24px -14px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
-html.lg-on body[data-ds-dark-theme] [class*="newSession"]:hover { background: #6475ff !important; }
+html.lg-on body[data-ds-dark-theme] [class*="newSession"]:hover { background: #5568ff !important; }
 
 /* one line, centred: the mask/content wrappers are flex boxes in their own
    right, so they need the same centring or the glyph drifts left of the label */
@@ -993,4 +993,23 @@ html.lg-on [role="dialog"],
 html.lg-on [aria-modal="true"] {
   max-height: 86vh;
   overflow: auto;
+}
+
+/* the new-session control is a label, not a toy: no press scale, no hover
+   colour, and none of the shell's label-mask plate behind the text */
+html.lg-on [class*="newSession"],
+html.lg-on [class*="newSession"]:hover,
+html.lg-on [class*="newSession"]:active,
+html.lg-on [class*="newSession"][data-lg-press] {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+html.lg-on [class*="newSessionLabelMask"],
+html.lg-on [class*="newSessionLabelMask"]::before,
+html.lg-on [class*="newSessionLabelMask"]::after,
+html.lg-on [class*="newSessionLabelMask"]::first-line {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
