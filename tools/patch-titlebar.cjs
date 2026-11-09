@@ -59,6 +59,21 @@ function patchMain(text) {
   const call = 'window.setTitleBarOverlay(windowsTitleBarOverlay(isDark));';
   const guarded = 'try{window.setTitleBarOverlay(windowsTitleBarOverlay(isDark));}catch(__lgNoOverlay){}';
   if (next.includes(call)) next = next.split(call).join(guarded);
+
+  /* Transparent window: the app draws its own rounded shell in CSS, so the
+     window itself must be see-through or those corners would reveal an opaque
+     rectangle instead of the desktop. Windows only — macOS keeps its native
+     shape and vibrancy. */
+  if (!next.includes('transparent: true')) {
+    const anchor = 'show: false,\n    title: "",';
+    if (!next.includes(anchor)) throw new Error('main: window options anchor not found');
+    next = next.replace(anchor, 'show: false,\n    ...isWindows ? { transparent: true } : {},\n    title: "",');
+  }
+  const solidBg = 'backgroundColor: process.platform === "darwin" ? "#00000000" : nativeTheme.shouldUseDarkColors ? "#141416" : "#f8f8f6",';
+  if (next.includes(solidBg)) {
+    next = next.replace(solidBg, 'backgroundColor: "#00000000",');
+  }
+
   if (next.includes('lg:window')) return next; // hook already installed
   const hook = `
 void import("electron").then(({ ipcMain, BrowserWindow }) => {

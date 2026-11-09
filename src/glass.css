@@ -1045,9 +1045,10 @@ html.lg-on [class*="newSession"] [class*="Label"] {
 html.lg-on {
   --lg-window-radius: 34px;
   --dsh-windows-content-radius: var(--lg-window-radius) !important;
-  background: #f8f8f6 !important;
+  /* the window is transparent (shell patch): keep this clear so the rounded
+     corners reveal the desktop instead of a coloured rectangle */
+  background: transparent !important;
 }
-html.lg-on:has(body[data-ds-dark-theme]) { background: #141416 !important; }
 html.lg-on #lg-wall {
   border-radius: var(--lg-window-radius);
   corner-shape: superellipse(1.7);
