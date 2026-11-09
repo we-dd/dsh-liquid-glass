@@ -1034,3 +1034,26 @@ html.lg-on [class*="newSession"] [class*="Label"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* ============================================================================
+   Window shape: Apple-style continuous corners on the outermost surface.
+   The window is a rectangle (Electron, frameless), so the shell is clipped to
+   a superellipse and the four outside corners are painted with the window
+   background colour the shell uses (#f8f8f6 / #141416), so the notch reads as
+   the real window chrome instead of a stray polygon.
+   ========================================================================== */
+html.lg-on {
+  --lg-window-radius: 34px;
+  --dsh-windows-content-radius: var(--lg-window-radius) !important;
+  background: #f8f8f6 !important;
+}
+html.lg-on:has(body[data-ds-dark-theme]) { background: #141416 !important; }
+html.lg-on #lg-wall {
+  border-radius: var(--lg-window-radius);
+  corner-shape: superellipse(1.7);
+  overflow: hidden;
+}
+html.lg-on #root {
+  border-radius: var(--lg-window-radius);
+  corner-shape: superellipse(1.7);
+}
