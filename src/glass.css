@@ -952,3 +952,45 @@ html.lg-on .lg-traffic-dot svg {
 html.lg-on .lg-traffic:hover .lg-traffic-dot svg { opacity: 1; }
 html.lg-on .lg-traffic-dot:active { filter: brightness(0.86); }
 html.lg-on .lg-traffic-dot:focus-visible { outline: 2px solid #4176e6; outline-offset: 2px; }
+
+/* ============================================================================
+   Modals: no bleed-through, ever.
+   The ask/confirm card is translucent by default, so chat text shows through it
+   and reads as "content hidden behind something". Any dialog-like surface gets
+   an opaque plate; anything that looks like a dialog but is only marked by its
+   class name is covered by the [class*="dialog" i] grab bag.
+   ========================================================================== */
+html.lg-on [role="dialog"],
+html.lg-on [aria-modal="true"],
+html.lg-on [class*="dialog" i],
+html.lg-on [class*="modal" i],
+html.lg-on [class*="sheet" i],
+html.lg-on [class*="askPanel" i],
+html.lg-on [class*="promptCard" i] {
+  background-color: #fbfcff !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow:
+    0 34px 90px -40px rgba(10, 18, 40, 0.5),
+    0 0 0 1px rgba(13, 21, 38, 0.08) !important;
+}
+html.lg-on body[data-ds-dark-theme] [role="dialog"],
+html.lg-on body[data-ds-dark-theme] [aria-modal="true"],
+html.lg-on body[data-ds-dark-theme] [class*="dialog" i],
+html.lg-on body[data-ds-dark-theme] [class*="modal" i],
+html.lg-on body[data-ds-dark-theme] [class*="sheet" i],
+html.lg-on body[data-ds-dark-theme] [class*="askPanel" i],
+html.lg-on body[data-ds-dark-theme] [class*="promptCard" i] {
+  background-color: #15181f !important;
+  box-shadow:
+    0 34px 90px -40px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+/* a modal that is taller than the window scrolls inside itself instead of
+   spilling its first line out over the rounded edge */
+html.lg-on [role="dialog"],
+html.lg-on [aria-modal="true"] {
+  max-height: 86vh;
+  overflow: auto;
+}
