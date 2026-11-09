@@ -1,0 +1,10 @@
+# normalise line endings so the committed bundle and the built one never differ
+* text=auto eol=lf
+*.js text eol=lf
+*.cjs text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.png binary
